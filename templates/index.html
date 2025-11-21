@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="mb-3">
+      <a href="{{ url_for('add_person') }}" class="btn btn-primary">Add New Person</a>
+    </div>
+
+    <h2>All Family Members</h2>
+    <ul class="list-group">
+        {% for p in people %}
+            <li class="list-group-item d-flex align-items-center">
+                {% if p.profile_photo %}
+                    <img src="/{{ p.profile_photo }}" style="height:40px; width:40px; object-fit:cover; margin-right:10px; border-radius:4px;">
+                {% endif %}
+                <a href="{{ url_for('person_profile', person_id=p.id) }}">{{ p.name }}</a>
+                <small class="text-muted ms-auto">{{ p.birth_year }}</small>
+            </li>
+        {% else %}
+            <li class="list-group-item">No people added yet.</li>
+        {% endfor %}
+    </ul>
+{% endblock %}

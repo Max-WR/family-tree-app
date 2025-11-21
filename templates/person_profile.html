@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="d-flex align-items-center mb-3">
+    {% if person.profile_photo %}
+      <img src="/{{ person.profile_photo }}" style="height:120px; width:120px; object-fit:cover; margin-right:15px; border-radius:6px;">
+    {% endif %}
+    <div>
+      <h2>{{ person.name }}</h2>
+      <p><strong>Born:</strong> {{ person.birth_year }} {% if person.death_year %} — <strong>Died:</strong> {{ person.death_year }}{% endif %}</p>
+    </div>
+  </div>
+
+  <h4>Biography</h4>
+  <p>{{ person.bio_text or "No biography yet." }}</p>
+
+  {% if media %}
+    <h4>Media</h4>
+    <ul>
+      {% for m in media %}
+        <li>{{ m.media_type }} — {{ m.file_path }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+{% endblock %}
