@@ -75,8 +75,11 @@ def person_profile(person_id):
     media = Media.query.filter_by(person_id=person_id).all()
     return render_template("person_profile.html", person=p, media=media)
 
-if __name__ == "__main__":
-    # Create DB if not exists
+def create_app():
     with app.app_context():
         db.create_all()
+    return app
+
+if __name__ == "__main__":
+    app = create_app()
     app.run(debug=True)
