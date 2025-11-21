@@ -4,19 +4,28 @@ import os
 
 app = Flask(__name__)
 
-# Database config - Simple version
+# Debug database connection
+print("=== DATABASE DEBUG INFO ===")
 if 'DATABASE_URL' in os.environ:
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL'].replace('postgres://', 'postgresql://')
+    database_url = os.environ['DATABASE_URL']
+    print(f"Database URL found: {database_url[:50]}...")  # Show first 50 chars
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url.replace('postgres://', 'postgresql://')
 else:
+    print("No DATABASE_URL found, using SQLite")
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///family.db'
 
+print(f"Final database URL: {app.config['SQLALCHEMY_DATABASE_URI'][:50]}...")
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
+
+try:
+    db = SQLAlchemy(app)
+    print("Database connection successful")
+except Exception as e:
+    print(f"Database connection failed: {e}")
 
 # UPLOAD folder
 UPLOAD_FOLDER = 'static/uploads'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # ---- SIMPLIFIED DATABASE MODELS ----
 class Person(db.Model):
@@ -38,42 +47,38 @@ class Media(db.Model):
 @app.route("/")
 def index():
     try:
+        print("=== Loading homepage ===")
         people = Person.query.order_by(Person.name).all()
+        print(f"Found {len(people)} people in database")
         return render_template("index.html", people=people)
     except Exception as e:
-        return f"Error loading people: {str(e)}"
+        error_msg = f"Error loading homepage: {str(e)}"
+        print(error_msg)
+        return error_msg
 
 @app.route("/add_person", methods=["GET", "POST"])
 def add_person():
     if request.method == "POST":
         try:
             name = request.form.get("name", "").strip()
-            birth_year = request.form.get("birth_year", "").strip()
-            death_year = request.form.get("death_year", "").strip()
-            bio_text = request.form.get("bio_text", "").strip()
-
-            photo = request.files.get("profile_photo", None)
-            filename = None
-
-            if photo and photo.filename:
-                # Save the photo with original name for now
-                filename = os.path.join(app.config['UPLOAD_FOLDER'], photo.filename)
-                photo.save(filename)
-                filename = f"static/uploads/{photo.filename}"
-
+            print(f"Adding person: {name}")
+            
             new_person = Person(
                 name=name,
-                birth_year=birth_year,
-                death_year=death_year,
-                bio_text=bio_text,
-                profile_photo=filename
+                birth_year=request.form.get("birth_year", "").strip(),
+                death_year=request.form.get("death_year", "").strip(),
+                bio_text=request.form.get("bio_text", "").strip(),
+                profile_photo=None  # Skip photos for now
             )
             
             db.session.add(new_person)
             db.session.commit()
+            print(f"Successfully added: {name}")
             return redirect(url_for("index"))
         except Exception as e:
-            return f"Error adding person: {str(e)}"
+            error_msg = f"Error adding person: {str(e)}"
+            print(error_msg)
+            return error_msg
 
     return render_template("add_person.html")
 
@@ -81,14 +86,18 @@ def add_person():
 def person_profile(person_id):
     try:
         p = Person.query.get_or_404(person_id)
-        media = Media.query.filter_by(person_id=person_id).all()
-        return render_template("person_profile.html", person=p, media=media)
+        return render_template("person_profile.html", person=p, media=[])
     except Exception as e:
         return f"Error loading profile: {str(e)}"
 
 # Initialize database
-with app.app_context():
-    db.create_all()
+try:
+    with app.app_context():
+        print("=== Creating database tables ===")
+        db.create_all()
+        print("Database tables created successfully")
+except Exception as e:
+    print(f"Error creating tables: {e}")
 
 if __name__ == "__main__":
     app.run(debug=True)
